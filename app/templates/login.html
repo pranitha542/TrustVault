@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center login-space">
+    <div class="col-12 col-md-8 col-lg-5">
+        <section class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-lg-5">
+                <span class="eyebrow">PRIVATE DOCUMENT WORKSPACE</span>
+                <h1 class="h2 mt-2 mb-2">Welcome back</h1>
+                <p class="text-secondary mb-4">Sign in to securely access documents shared with you.</p>
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="username_or_email" class="form-label">Username or email</label>
+                        <input class="form-control form-control-lg" id="username_or_email" name="username_or_email" autocomplete="username" required maxlength="254">
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <input class="form-control form-control-lg" id="password" name="password" type="password" autocomplete="current-password" required maxlength="1024">
+                    </div>
+                    <button class="btn btn-primary btn-lg w-100" type="submit">Sign in</button>
+                </form>
+                <p class="small text-secondary mt-4 mb-0">Your session is protected with a secure, HttpOnly cookie.</p>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

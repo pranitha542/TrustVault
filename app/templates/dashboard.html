@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+    <div>
+        <span class="eyebrow">YOUR WORKSPACE</span>
+        <h1 class="display-6 fw-semibold mt-2 mb-1">Documents</h1>
+        <p class="text-secondary mb-0">Manage your files and the documents shared with you.</p>
+    </div>
+    {% if user.role == "owner" %}
+    <a class="btn btn-primary" href="#upload-panel">Upload a document</a>
+    {% endif %}
+</div>
+
+<section class="card border-0 shadow-sm mb-4" aria-labelledby="search-heading">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3" id="search-heading">Search and filter</h2>
+        <form method="get" action="/dashboard" class="row g-3 align-items-end">
+            <div class="col-12 col-md-6 col-xl-3">
+                <label class="form-label" for="search">Title or filename</label>
+                <input class="form-control" id="search" name="search" value="{{ filters.search }}">
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <label class="form-label" for="owner">Owner username or email</label>
+                <input class="form-control" id="owner" name="owner" value="{{ filters.owner }}">
+            </div>
+            <div class="col-12 col-md-4 col-xl-2">
+                <label class="form-label" for="category">Category</label>
+                <input class="form-control" id="category" name="category" value="{{ filters.category }}">
+            </div>
+            <div class="col-6 col-md-4 col-xl-1">
+                <label class="form-label" for="date_from">From</label>
+                <input class="form-control" id="date_from" name="date_from" type="date" value="{{ filters.date_from }}">
+            </div>
+            <div class="col-6 col-md-4 col-xl-1">
+                <label class="form-label" for="date_to">To</label>
+                <input class="form-control" id="date_to" name="date_to" type="date" value="{{ filters.date_to }}">
+            </div>
+            <div class="col-12 col-xl-2 d-flex gap-2">
+                <button class="btn btn-primary flex-grow-1" type="submit">Search</button>
+                <a class="btn btn-outline-secondary" href="/dashboard">Clear</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if user.role == "owner" %}
+<section id="upload-panel" class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-1">Add a document</h2>
+        <p class="text-secondary small">PDF, plain text, PNG, JPEG, or DOCX · up to 5 MB</p>
+        <form id="upload-form" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="upload-title">Title</label>
+                <input class="form-control" id="upload-title" name="title" required maxlength="200">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="upload-category">Category</label>
+                <input class="form-control" id="upload-category" name="category" required maxlength="80">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="upload-file">File</label>
+                <input class="form-control" id="upload-file" name="file" type="file" accept=".pdf,.txt,.png,.jpg,.jpeg,.docx" required>
+            </div>
+            <div class="col-12 col-md-2">
+                <button class="btn btn-primary w-100" type="submit">Upload</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endif %}
+
+<section aria-labelledby="documents-heading">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0" id="documents-heading">Available to you</h2>
+        <span class="text-secondary small">{{ documents|length }} document{% if documents|length != 1 %}s{% endif %}</span>
+    </div>
+    {% if documents %}
+    <div class="row g-3">
+        {% for row in documents %}
+        {% set document = row.document %}
+        <div class="col-12 col-xl-6">
+            <article class="card document-card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="min-w-0">
+                            <span class="badge text-bg-light mb-2">{{ document.category }}</span>
+                            <h3 class="h5 text-break">{{ document.title }}</h3>
+                            <p class="text-secondary small text-break mb-1">{{ document.original_filename }}</p>
+                            <p class="text-secondary small mb-3">Owner: {{ row.owner_name }} · Added {{ document.created_at.strftime("%b %d, %Y") }}</p>
+                        </div>
+                        {% if row.can_edit and not row.can_delete %}
+                        <span class="badge rounded-pill text-bg-primary-subtle">Can edit</span>
+                        {% elif not row.can_edit %}
+                        <span class="badge rounded-pill text-bg-secondary-subtle">Read only</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-sm btn-outline-primary" href="/documents/{{ document.id }}/download">Download</a>
+                        {% if row.can_edit %}
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-edit-toggle="{{ document.id }}">Edit details</button>
+                        {% endif %}
+                        {% if row.can_share %}
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-share-toggle="{{ document.id }}">Sharing</button>
+                        {% endif %}
+                        {% if row.can_delete %}
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-delete-id="{{ document.id }}">Delete</button>
+                        {% endif %}
+                    </div>
+
+                    {% if row.can_edit %}
+                    <form class="document-action-panel mt-3 d-none" data-edit-form="{{ document.id }}">
+                        <h4 class="h6">Edit metadata</h4>
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small" for="title-{{ document.id }}">Title</label>
+                                <input class="form-control form-control-sm" id="title-{{ document.id }}" name="title" value="{{ document.title }}" required maxlength="200">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small" for="category-{{ document.id }}">Category</label>
+                                <input class="form-control form-control-sm" id="category-{{ document.id }}" name="category" value="{{ document.category }}" required maxlength="80">
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-primary mt-2" type="submit">Save changes</button>
+                    </form>
+                    {% endif %}
+
+                    {% if row.can_share %}
+                    <div class="document-action-panel mt-3 d-none" data-share-panel="{{ document.id }}">
+                        <form data-share-form="{{ document.id }}">
+                            <h4 class="h6">Share with an existing user</h4>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small" for="recipient-{{ document.id }}">Username or email</label>
+                                    <input class="form-control form-control-sm" id="recipient-{{ document.id }}" name="username_or_email" required maxlength="254">
+                                </div>
+                                <div class="col-8 col-md-4">
+                                    <label class="form-label small" for="permission-{{ document.id }}">Access</label>
+                                    <select class="form-select form-select-sm" id="permission-{{ document.id }}" name="permission">
+                                        <option value="read">Read only</option>
+                                        <option value="edit">Can edit metadata</option>
+                                    </select>
+                                </div>
+                                <div class="col-4 col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" type="submit">Grant</button>
+                                </div>
+                            </div>
+                        </form>
+                        <h4 class="h6 mt-3">Current access</h4>
+                        {% if row.grants %}
+                        <ul class="list-group list-group-flush">
+                            {% for grant in row.grants %}
+                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center gap-2">
+                                <span class="small text-break">{{ grant.user.username }} · {{ grant.permission|capitalize }}</span>
+                                <button class="btn btn-sm btn-outline-danger flex-shrink-0" type="button" data-revoke-url="/documents/{{ document.id }}/permissions/{{ grant.id }}">Revoke</button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="small text-secondary mb-0">No active shares.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state text-center p-5">
+        <div class="empty-icon" aria-hidden="true">✓</div>
+        <h3 class="h5">No documents found</h3>
+        <p class="text-secondary mb-0">{% if filters.search or filters.owner or filters.category or filters.date_from or filters.date_to %}Try another search or clear your filters.{% elif user.role == "owner" %}Upload your first document above to get started.{% else %}Documents shared with you will appear here.{% endif %}</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
